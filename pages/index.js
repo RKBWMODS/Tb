@@ -1,55 +1,54 @@
-
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 
 export default function Home() {
-  const [url, setUrl] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [data, setData] = useState(null);
-  const [error, setError] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [hasSession, setHasSession] = useState(false);
+  const [coins, setCoins] = useState(0);
 
-  const analyze = async () => {
-    setLoading(true);
-    setError(null);
-    setData(null);
-    try {
-      const res = await fetch('/api/analyze', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ url })
-      });
-      const result = await res.json();
-      if (res.ok) setData(result);
-      else setError(result.error);
-    } catch (err) {
-      setError('Gagal menghubungi server.');
-    }
-    setLoading(false);
+  useEffect(() => {
+    setTimeout(() => setLoading(false), 2000);
+    const sessionUsed = localStorage.getItem('usedFree');
+    const savedCoins = parseInt(localStorage.getItem('coins') || '0', 10);
+    setHasSession(!!sessionUsed);
+    setCoins(savedCoins);
+  }, []);
+
+  const handleBuyCoins = () => {
+    let newCoins = coins + 10;
+    setCoins(newCoins);
+    localStorage.setItem('coins', newCoins.toString());
+  };
+
+  const confirmTransfer = () => {
+    handleBuyCoins();
+  };
+
+  if (loading) {
+    return <div className="loader">Loading intel...</div>;
+  }
+
+  if (hasSession && coins <= 0) {
+    return (
+      <div className="blocked">
+        <h1>ANDA HARUS MEMBELI KOIN UNTUK MEMBUKA BOCORAN SELANJUTNYA</h1>
+        <div className="coin-box" onClick={handleBuyCoins}>BELI 10 KOIN</div>
+        <img src="/qr-payment.png" alt="QR Payment" className="qr" />
+        <button onClick={confirmTransfer}>SAYA SUDAH TRANSFER</button>
+      </div>
+    );
+  }
+
+  const showIntel = () => {
+    localStorage.setItem('usedFree', 'true');
+    setCoins(coins - 1);
+    localStorage.setItem('coins', (coins - 1).toString());
   };
 
   return (
-    <div style={{ background: '#000', color: '#0f0', fontFamily: 'Courier New', padding: 40, minHeight: '100vh' }}>
-      <h1>===[ HACKER TOGEL INTEL ]===</h1>
-      <p>Masukkan link situs togel:</p>
-      <input
-        type="text"
-        value={url}
-        onChange={e => setUrl(e.target.value)}
-        style={{ width: '100%', padding: 10, background: '#111', color: '#0f0', border: '1px solid #0f0' }}
-      />
-      <button onClick={analyze} style={{ marginTop: 10, padding: 10, background: '#0f0', color: '#000', border: 'none' }}>
-        ANALISA SITUS
-      </button>
-      {loading && <pre>Memindai kode bandar... ████████████</pre>}
-      {error && <pre style={{ color: 'red' }}>{error}</pre>}
-      {data && (
-        <pre>
-Bocoran AI:
-2D: {data.prediksi["2D"]} | 3D: {data.prediksi["3D"]} | 4D: {data.prediksi["4D"]}
-
-Terakhir ditemukan:
-{data.nomer.join(', ')}
-        </pre>
-      )}
+    <div className="main">
+      <h1>=== [ HACKER TOGEL INTEL V2 ] ===</h1>
+      <button onClick={showIntel}>LIHAT BOCORAN</button>
+      {coins > 0 && <p>Sisa Koin: {coins}</p>}
     </div>
   );
-          }
+}
